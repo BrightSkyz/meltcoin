@@ -124,3 +124,4 @@ gradle-app.setting
 gradlew*
 gradle/*
 .idea/*.xml
+*.xml___jb_old___

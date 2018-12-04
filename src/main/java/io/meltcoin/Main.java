@@ -5,17 +5,25 @@ import io.meltcoin.blockchain.Blockchain;
 import io.meltcoin.blockchain.Wallet;
 import io.meltcoin.blockchain.transaction.Transaction;
 import io.meltcoin.blockchain.transaction.TransactionOutput;
+import io.meltcoin.p2p.PeerNetwork;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.Security;
 
 public class Main {
 
+    public static PeerNetwork peerNetwork;
+
     public static Wallet walletA;
     public static Wallet walletB;
 
     public static void main(String[] args) {
+        // Create PeerNetwork and run it
+        peerNetwork = new PeerNetwork();
+        peerNetwork.start();
+
         //add our blocks to the blockchain ArrayList:
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider()); //Setup Bouncey castle as a Security Provider
+        Security.addProvider(new BouncyCastleProvider()); //Setup Bouncey castle as a Security Provider
 
         //Create wallets:
         walletA = new Wallet();
