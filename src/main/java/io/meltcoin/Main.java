@@ -8,6 +8,7 @@ import io.meltcoin.blockchain.transaction.TransactionOutput;
 import io.meltcoin.p2p.PeerNetwork;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.*;
 import java.security.Security;
 
 public class Main {
@@ -17,10 +18,41 @@ public class Main {
     public static Wallet walletA;
     public static Wallet walletB;
 
-    public static void main(String[] args) {
-        // Create PeerNetwork and run it
+    public static void main(String[] args) throws IOException {
+        // Create PeerNetwork and run it to make sure we can connect to peers
         peerNetwork = new PeerNetwork();
         peerNetwork.start();
+
+        // Load config files
+        File dataDir = new File("data");
+        if (!dataDir.isDirectory()) {
+            dataDir.mkdir();
+        }
+        // Peers config
+        File peersDir = new File("data/peers");
+        if (!peersDir.isDirectory()) {
+            peersDir.mkdir();
+        }
+        // Get the peer files
+        File[] peersDirFiles = peersDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".peers");
+            }
+        });
+        // Loop over the files
+        for (File peersFile: peersDirFiles) {
+            FileInputStream fileInputStream = new FileInputStream(peersFile);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fileInputStream));
+            String strLine;
+            while ((strLine = bufferedReader.readLine()) != null)   {
+                if (strLine.contains(":")) {
+                    String[] splitLine = strLine.split(":");
+                    peerNetwork.connectToPeer(splitLine[0], Integer.getInteger(splitLine[1]));
+                }
+            }
+            fileInputStream.close();
+        }
 
         //add our blocks to the blockchain ArrayList:
         Security.addProvider(new BouncyCastleProvider()); //Setup Bouncey castle as a Security Provider
@@ -30,7 +62,7 @@ public class Main {
         walletB = new Wallet();
         Wallet coinbase = new Wallet();
 
-        //create genesis transaction, which sends 100 NoobCoin to walletA:
+        // Create genesis transaction, which sends 100 Meltcoin to walletA:
         Blockchain.genesisTransaction = new Transaction(coinbase.publicKey, walletA.publicKey, 100f, null);
         Blockchain.genesisTransaction.generateSignature(coinbase.privateKey);	 //manually sign the genesis transaction
         Blockchain.genesisTransaction.transactionId = "0"; //manually set the transaction id
