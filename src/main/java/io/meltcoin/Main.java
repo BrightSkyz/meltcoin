@@ -8,7 +8,12 @@ import io.meltcoin.blockchain.transaction.TransactionOutput;
 import io.meltcoin.p2p.PeerNetwork;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.security.Security;
 
 public class Main {
@@ -21,7 +26,6 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // Create PeerNetwork and run it to make sure we can connect to peers
         peerNetwork = new PeerNetwork();
-        peerNetwork.start();
 
         // Load config files
         File dataDir = new File("data");
@@ -48,7 +52,7 @@ public class Main {
             while ((strLine = bufferedReader.readLine()) != null)   {
                 if (strLine.contains(":")) {
                     String[] splitLine = strLine.split(":");
-                    peerNetwork.connectToPeer(splitLine[0], Integer.getInteger(splitLine[1]));
+                    //peerNetwork.connectToPeer(splitLine[0], Integer.getInteger(splitLine[1]));
                 }
             }
             fileInputStream.close();

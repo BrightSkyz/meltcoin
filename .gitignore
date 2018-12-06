@@ -125,3 +125,4 @@ gradlew*
 gradle/*
 .idea/*.xml
 *.xml___jb_old___
+*.xml___jb_tmp___

@@ -1,67 +1,40 @@
 package io.meltcoin.p2p;
 
-import java.net.ServerSocket;
-import java.net.Socket;
+import com.sun.security.ntlm.Server;
+
+import java.io.IOException;
+import java.net.*;
+import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 
-public class PeerNetwork extends Thread {
+public class PeerNetwork {
 
     public int listenPort;
-    public boolean shouldRun = true;
-    public ArrayList<PeerThread> peerThreads;
+    public ServerSocketChannel serverSocketChannel;
+    public ArrayList<Peer> peers;
 
-    public ArrayList<String> newPeers;
+    public ReceiveServer receiveServer;
+    public SendAction sendAction;
+
+    public ArrayList<String> discoveredPeers;
 
     public PeerNetwork() {
         this.listenPort = 8420;
-        this.peerThreads = new ArrayList<>();
-        this.newPeers = new ArrayList<>();
+        this.peers = new ArrayList<>();
+
+        receiveServer = new ReceiveServer(this.listenPort);
+        receiveServer.start();
+
+        sendAction = new SendAction();
     }
 
-    public void connectToPeer(String peer, int port) {
-        try {
-            Socket socket = new Socket(peer, port);
-            String remoteHost = socket.getInetAddress() + "";
-            remoteHost = remoteHost.replace("/", "");
-            remoteHost = remoteHost.replace("\\", "");
-            int remotePort = socket.getPort();
-            newPeers.add(remoteHost + ":" + remotePort);
-            peerThreads.add(new PeerThread(socket));
-            peerThreads.get(peerThreads.size() - 1).start();
-        } catch (Exception e) {
-            System.out.println("Unable to connect to " + peer + ":" + port);
+    /*public void connectToPeer(String host, Integer port) {
+        peers.add(newPeer);
+    }*/
+
+    /*public void broadcastMessage(PeerMessageType peerMessageType, String message) {
+        for (Peer peer : peers) {
+            peer.sendMessage(peerMessageType, message);
         }
-    }
-
-    public PeerNetwork(int port) {
-        this.listenPort = port;
-        this.peerThreads = new ArrayList<>();
-    }
-
-    public void run() {
-        try {
-            ServerSocket listenSocket = new ServerSocket(listenPort);
-            while (shouldRun) {
-                peerThreads.add(new PeerThread(listenSocket.accept()));
-                peerThreads.get(peerThreads.size() - 1).start();
-
-            }
-            listenSocket.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void broadcast(String toBroadcast) {
-        for (int i = 0; i < peerThreads.size(); i++) {
-            System.out.println("Sent: " + toBroadcast);
-            peerThreads.get(i).send(toBroadcast);
-        }
-    }
-
-    public void broadcastIgnorePeer(String toBroadcast, String peerToIgnore) {
-        for (int i = 0; i < peerThreads.size(); i++) {
-            peerThreads.get(i).send(toBroadcast);
-        }
-    }
+    }*/
 }
