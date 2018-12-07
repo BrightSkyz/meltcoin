@@ -5,7 +5,6 @@ import io.meltcoin.blockchain.Blockchain;
 import io.meltcoin.blockchain.Wallet;
 import io.meltcoin.blockchain.transaction.Transaction;
 import io.meltcoin.blockchain.transaction.TransactionOutput;
-import io.meltcoin.p2p.PeerNetwork;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.BufferedReader;
@@ -18,14 +17,11 @@ import java.security.Security;
 
 public class Main {
 
-    public static PeerNetwork peerNetwork;
-
     public static Wallet walletA;
     public static Wallet walletB;
 
     public static void main(String[] args) throws IOException {
         // Create PeerNetwork and run it to make sure we can connect to peers
-        peerNetwork = new PeerNetwork();
 
         // Load config files
         File dataDir = new File("data");
