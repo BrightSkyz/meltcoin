@@ -5,23 +5,48 @@ import io.meltcoin.blockchain.Blockchain;
 import io.meltcoin.blockchain.Wallet;
 import io.meltcoin.blockchain.transaction.Transaction;
 import io.meltcoin.blockchain.transaction.TransactionOutput;
+import io.meltcoin.p2p.PeerToPeer;
+import io.meltcoin.p2p.types.Message;
+import io.meltcoin.p2p.types.Peer;
+import org.apache.commons.codec.binary.Base64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import sun.security.ec.ECPublicKeyImpl;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.Security;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.HashMap;
 
 public class Main {
+
+    public static PeerToPeer peerToPeer = null;
+    public static HashMap<String, Peer> peers = new HashMap<>();
+
+    public static final String version = "1.0.0";
 
     public static Wallet walletA;
     public static Wallet walletB;
 
     public static void main(String[] args) throws IOException {
-        // Create PeerNetwork and run it to make sure we can connect to peers
+        // Create PeerToPeer network and run it to make sure we can connect to peers
+        peerToPeer = new PeerToPeer(8426);
+        peerToPeer.start();
+
+        Peer dnsSeedPeer = new Peer(peerToPeer, "dnsseed1.meltcoin.io", 8426);
+        peers.put(dnsSeedPeer.getHost() + ":" + dnsSeedPeer.getPort(), dnsSeedPeer);
+
+        for (Peer peer : peers.values()) {
+            try {
+                peer.sendMessage(new Message("discoverpeers", ""));
+            } catch (Exception e) {
+                System.out.println("There was an error connecting to " + peer.getHost() + ":" + peer.getPort() + ". Is it offline?");
+                peers.remove(peer.getHost() + ":" + peer.getPort());
+            }
+        }
 
         // Load config files
         File dataDir = new File("data");
@@ -46,57 +71,28 @@ public class Main {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fileInputStream));
             String strLine;
             while ((strLine = bufferedReader.readLine()) != null)   {
-                if (strLine.contains(":")) {
+                if (strLine.contains(":") && strLine.split(":").length == 2) {
                     String[] splitLine = strLine.split(":");
-                    //peerNetwork.connectToPeer(splitLine[0], Integer.getInteger(splitLine[1]));
+                    peers.put(splitLine[0] + ":" + splitLine[1], new Peer(peerToPeer, splitLine[0], Integer.getInteger(splitLine[1])));
                 }
             }
             fileInputStream.close();
         }
 
-        //add our blocks to the blockchain ArrayList:
-        Security.addProvider(new BouncyCastleProvider()); //Setup Bouncey castle as a Security Provider
+        // Setup Bouncy castle as a Security Provider
+        Security.addProvider(new BouncyCastleProvider());
 
-        //Create wallets:
-        walletA = new Wallet();
-        walletB = new Wallet();
-        Wallet coinbase = new Wallet();
+        // Load wallet or create if it doesn't exist
+        Wallet wallet = null;
+        File walletFile = new File("data/meltcoin.wallet");
+        if (!walletFile.isFile()) {
+            walletFile.createNewFile();
+            wallet = new Wallet();
+            // TODO: Save wallet to file
+        } else {
+            // TODO: Load wallet from file
+        }
 
-        // Create genesis transaction, which sends 100 Meltcoin to walletA:
-        Blockchain.genesisTransaction = new Transaction(coinbase.publicKey, walletA.publicKey, 100f, null);
-        Blockchain.genesisTransaction.generateSignature(coinbase.privateKey);	 //manually sign the genesis transaction
-        Blockchain.genesisTransaction.transactionId = "0"; //manually set the transaction id
-        Blockchain.genesisTransaction.outputs.add(new TransactionOutput(Blockchain.genesisTransaction.reciepient, Blockchain.genesisTransaction.value, Blockchain.genesisTransaction.transactionId)); //manually add the Transactions Output
-        Blockchain.UTXOs.put(Blockchain.genesisTransaction.outputs.get(0).id, Blockchain.genesisTransaction.outputs.get(0)); //its important to store our first transaction in the UTXOs list.
-
-        System.out.println("Creating and Mining Genesis block... ");
-        Block genesis = new Block("0");
-        genesis.addTransaction(Blockchain.genesisTransaction);
-        Blockchain.addBlock(genesis);
-
-        //testing
-        Block block1 = new Block(genesis.hash);
-        System.out.println("\nWalletA's balance is: " + walletA.getBalance());
-        System.out.println("\nWalletA is Attempting to send funds (40) to WalletB...");
-        block1.addTransaction(walletA.sendFunds(walletB.publicKey, 40f));
-        Blockchain.addBlock(block1);
-        System.out.println("\nWalletA's balance is: " + walletA.getBalance());
-        System.out.println("WalletB's balance is: " + walletB.getBalance());
-
-        Block block2 = new Block(block1.hash);
-        System.out.println("\nWalletA Attempting to send more funds (1000) than it has...");
-        block2.addTransaction(walletA.sendFunds(walletB.publicKey, 1000f));
-        Blockchain.addBlock(block2);
-        System.out.println("\nWalletA's balance is: " + walletA.getBalance());
-        System.out.println("WalletB's balance is: " + walletB.getBalance());
-
-        Block block3 = new Block(block2.hash);
-        System.out.println("\nWalletB is Attempting to send funds (20) to WalletA...");
-        block3.addTransaction(walletB.sendFunds( walletA.publicKey, 20));
-        System.out.println("\nWalletA's balance is: " + walletA.getBalance());
-        System.out.println("WalletB's balance is: " + walletB.getBalance());
-
-        Blockchain.isChainValid();
-
+        // TODO: Start GUI wallet/miner
     }
 }
